@@ -1,0 +1,58 @@
+---
+- name: conf web
+  hosts: servers
+  gather_facts: True
+  gather_subset: network
+  tasks:
+    - name: install nginx
+      apt:
+        name: nginx
+        state: latest
+      become: yes
+      
+    - name: start nginx
+      service:
+        name: nginx
+        state: started
+      become: yes
+    
+    - name: copy config
+      copy:
+        src:  "{{ web_conf_file_path }}" 
+        dest: /etc/nginx/sites-available/nginx.cfg
+      become: yes
+
+    - name: symlink to default 
+      file: 
+        src: /etc/nginx/sites-available/nginx.cfg
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+      become: yes
+
+    - name: copy index
+      template:
+        src: ./index.html.j2
+        dest: /usr/share/nginx/html/index.html
+      become: yes
+      when: "'web' in group_names"
+
+    - name: restart nginx 
+      service: 
+        name: nginx
+        state: restarted 
+      become: yes 
+
+    - name: allow nginx
+      ufw:
+        rule: allow
+        name: nginx
+      become: yes
+
+
+    
+
+      #add ip
+
+
+    
+    

@@ -1,0 +1,50 @@
+---
+- name: play1 - server facts
+  hosts: servers
+  tasks:
+    - name: find IP for each interface
+      debug:
+        msg: " interface {{ item }}'s IP is {{ ansible_facts[item]['ipv4']['address'] |default(None) }} /{{ ansible_facts[item]['ipv4']['prefix'] |default(None) }}"
+      with_items:
+      - "{{ ansible_interfaces }}"  
+
+- name: play2 - cisco facts
+  hosts: cisco
+  tasks:
+    - name: gather ios facts
+      ios_facts:
+        gather_subset:
+          - all
+    
+    - set_fact:
+        version: "{{ ansible_facts['net_version'] }}"
+        serial: "{{ ansible_facts['net_serialnum'] }}"
+        model: "{{ ansible_facts['net_model'] }}"
+        ip_addresses: "{{ ansible_facts['net_all_ipv4_addresses'] }}"
+        mem_total: "{{ ansible_facts['net_memtotal_mb'] | default(None) }}"
+        mem_free: "{{ ansible_facts['net_memfree_mb'] | default(None) }}"
+
+    - name: create csv
+      copy: 
+        content: | 
+          {{ inventory_hostname }},{{ serial }},{{ model }},{{ version }},({{ip_addresses}}),{{ mem_total }},{{ mem_free }}
+        dest: ./{{ inventory_hostname }}_facts.csv       
+
+
+    - name: clean brackets
+      replace:
+        path: ./{{ inventory_hostname }}_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+    - name: clean quotes
+      replace:
+        path: ./{{ inventory_hostname }}_facts.csv
+        regexp: "'"
+        replace: ''
+
+    - name: add header
+      lineinfile:
+        path: ./{{ inventory_hostname }}_facts.csv
+        insertbefore: BOF
+        line: name,serial num,model,ver,ip_addr,total mem,free mem
