@@ -1,2 +1,2 @@
 ---
-web_conf_file_path: lb-nginx.cfg
+web_conf_file_path: ./templates/lb-nginx.cfg
